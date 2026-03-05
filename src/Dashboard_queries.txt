@@ -1,0 +1,83 @@
+-- On-Time Performance
+
+muenster_realtime_silver
+| where timestamp_vehicle_ist >= now() - 15m
+| summarize 
+    otp = strcat(
+        round(100.0 * countif(delay <= 120) / count(), 2),
+        "%"
+    )
+
+-- Average Delay (minutes)
+
+muenster_realtime_silver
+| where timestamp_vehicle_ist >= now() - 15m
+| summarize avg_delay = round(avg(delay) / 60,2)
+
+-- Max Delay (minutes)
+
+muenster_realtime_silver
+| where timestamp_vehicle_ist >= now() - 15m
+| summarize max_delay = round(max(delay) / 60.0,2)
+    by line_text
+
+-- Live map
+
+muenster_realtime_silver
+| where timestamp_vehicle_ist >= now() - 15m
+| summarize arg_max(timestamp_vehicle_ist, *) by vehicle_id
+| extend delay_minutes = round(delay / 60.0, 2)
+| project 
+    lat,
+    lon,
+    Info = strcat("Line ", line_text, " - ", delay_minutes, " minutes delay"),
+    Line = line_text,
+    direction = direction_text,
+    delay_minutes,
+    timestamp = timestamp_vehicle_ist
+
+-- Last Event
+
+muenster_realtime_silver
+| summarize 
+    last_event = max(timestamp_vehicle_ist)
+| project 
+ format_datetime(last_event, "yyyy-MM-dd HH:mm:ss")
+
+-- Active vehicles
+
+muenster_realtime_silver
+| where timestamp_vehicle_ist >= now() - 15m
+| summarize 
+    dcount(vehicle_id)
+
+-- Most delayed lines (last 24 hours)
+
+gold_realtime_mv
+| extend timestamp = service_day + hour * 1h
+| where timestamp >= now() - 24h
+| summarize
+    weighted_delay = sum(avg_delay_sec * event_count),
+    total_events = sum(event_count)
+    by line_text
+| extend Delay_minutes = round(weighted_delay / total_events / 60.0, 2)
+| order by Delay_minutes desc
+| take 8
+
+-- most busy hours (last 24 hours)
+
+gold_realtime_mv
+| extend timestamp = service_day + hour * 1h
+| where timestamp >= now() - 24h
+| summarize Delay_minutes = avg(avg_delay_sec) / 60.0 by hour
+| extend hour_category = tostring(hour)
+| order by Delay_minutes desc
+| take 8
+
+-- Delay Distribution (last 24 hours)
+
+muenster_realtime_silver
+| where timestamp_vehicle_ist > ago(24h)
+| extend delay_min = delay / 60.0
+| summarize Count = count() by bin(delay_min, 0.5)
+| order by delay_min asc
