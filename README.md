@@ -1,4 +1,5 @@
 <img width="1451" height="854" alt="Dashboard" src="https://github.com/user-attachments/assets/66529aed-4345-4e3a-9083-85535a0170c3" />
+
 # Real-Time Commuter Dashboard (GFTS-RT + Microsoft Fabric)
 
 This project demonstrates a complete real-time data pipeline built on Microsoft Fabric using GTFS-Realtime data from Stadtwerke Münster. It ingests live vehicle events via WebSocket, processes them through Azure Event Hub and Fabric Eventstream, stores them in a KQL database (Bronze/Silver/Gold), and visualizes real-time and historical transit performance using a Real-time-Dashboard.
