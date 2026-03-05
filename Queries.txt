@@ -1,0 +1,71 @@
+--- Create Silver
+
+.create table muenster_realtime_silver (
+    event_type: string,
+    operation: string,
+    vehicle_id: int,
+    next_stop_id: int,
+    start_stop_id: int,
+    end_stop_id: int,
+    current_stop_id: int,
+    line_id: int,
+    line_text: string,
+    trip_id: string,
+    direction_id: int,
+    direction_text: string,
+    sequence: int,
+    timestamp_ingested: datetime,
+    timestamp_vehicle_ist: datetime,
+    timestamp_soll_arrival: datetime,
+    timestamp_soll_departure: datetime,
+    service_day: string,
+    delay: int,
+    lat: decimal,
+    lon: decimal
+)
+
+--- Fill Silver
+
+.alter table muenster_realtime_silver policy update @"[{""IsEnabled"": true, ""Source"": ""muenster_realtime_bronze"", ""Query"": ""
+	muenster_realtime_bronze 
+	| extend event_type=tostring(event_type), 
+		operation=tostring(operation), 
+		vehicle_id=toint(vehicle_id), 
+		next_stop_id=toint(next_stop_id), 
+		start_stop_id=toint(start_stop_id), 
+		end_stop_id=toint(end_stop_id), 
+		current_stop_id=toint(current_stop_id), 
+		line_id=toint(line_id), 
+		line_text=tostring(line_text), 
+		trip_id=tostring(trip_id), 
+		direction_id=toint(direction_id), 
+		direction_text=tostring(direction_text), 
+		sequence=toint(sequence), 
+		timestamp_ingested=todatetime(timestamp_ingested)+1h, 
+		timestamp_vehicle_ist=unixtime_seconds_todatetime(toint(timestamp_vehicle_ist))+1h, 
+		timestamp_soll_arrival=unixtime_seconds_todatetime(toint(timestamp_soll_arrival))+1h, 
+		timestamp_soll_departure=unixtime_seconds_todatetime(toint(timestamp_soll_departure))+1h, 
+		service_day=tostring(service_day), 
+		delay=toint(delay), 
+		lat=todecimal(lat), 
+		lon=todecimal(lon) 
+	| where isnotnull(lat) and isnotnull(lon) and delay > -180 
+	| project event_type,operation,vehicle_id,next_stop_id,start_stop_id,end_stop_id,current_stop_id,line_id,line_text,trip_id,direction_id,direction_text,sequence,timestamp_ingested,timestamp_vehicle_ist,timestamp_soll_arrival,timestamp_soll_departure,service_day,delay,lat,lon""}]"
+
+--- create gold materialized view
+
+.create-or-alter materialized-view gold_realtime_mv on table muenster_realtime_silver {
+    muenster_realtime_silver
+    | extend service_day = startofday(timestamp_vehicle_ist)
+    | extend hour = datetime_part("hour", timestamp_vehicle_ist)
+    | summarize
+        event_count = count(),
+        vehicle_count = dcount(vehicle_id),
+        avg_delay_sec = avg(delay),
+        ontime_events = countif(delay <= 0),
+        delayed_events = countif(delay > 0)
+      by service_day, hour, line_id, line_text
+}
+
+
+--- 
