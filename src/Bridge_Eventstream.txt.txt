@@ -1,0 +1,129 @@
+import json
+import time
+from datetime import datetime
+import os
+
+import websocket
+from azure.eventhub import EventHubProducerClient, EventData
+
+# --- Azure Event Hub configuration ---
+# IMPORTANT:
+# The connection string must be stored in an environment variable.
+# Example (PowerShell):
+#   setx EVENTHUB_CONNECTION_STR "your-connection-string"
+#
+# Example (Linux/macOS):
+#   export EVENTHUB_CONNECTION_STR="your-connection-string"
+
+EVENTHUB_CONNECTION_STR = os.getenv("EVENTHUB_CONNECTION_STR")
+
+if not EVENTHUB_CONNECTION_STR:
+    raise ValueError("Environment variable EVENTHUB_CONNECTION_STR is not set.")
+
+WS_URL = "wss://websocket.busradar.conterra.de/"
+
+print("Starting script...")
+print("Event Hub connection string loaded from environment variable.")
+
+# Create the Event Hub producer client
+producer = EventHubProducerClient.from_connection_string(
+    conn_str=EVENTHUB_CONNECTION_STR
+)
+
+# Function to send events to Event Hub
+def send_to_eventhub(event: dict):
+    try:
+        body = json.dumps(event)
+        batch = producer.create_batch()
+        batch.add(EventData(body))
+        producer.send_batch(batch)
+        print("Event sent successfully:", event)
+
+    except Exception as e:
+        print("Error sending to Event Hub:", repr(e))
+
+
+# WebSocket callback functions
+def on_message(ws, message):
+    print("Raw WebSocket message received:", message)
+
+    try:
+        msg = json.loads(message)
+
+        for feature in msg.get("features", []):
+            coords = feature.get("geometry", {}).get("coordinates", [None, None])
+            props = feature.get("properties", {})
+
+            event = {
+                "event_type": msg.get("type"),
+                "operation": props.get("operation"),
+
+                # IDs
+                "vehicle_id": props.get("fahrzeugid"),
+                "next_stop_id": props.get("nachhst"),
+                "start_stop_id": props.get("starthst"),
+                "end_stop_id": props.get("zielhst"),
+                "current_stop_id": props.get("akthst"),
+
+                # Line & trip
+                "line_id": props.get("linienid"),
+                "line_text": props.get("linientext"),
+                "trip_id": props.get("fahrtbezeichner"),
+                "direction_id": props.get("richtungsid"),
+                "direction_text": props.get("richtungstext"),
+                "sequence": props.get("sequenz"),
+
+                # Times
+                "timestamp_ingested": datetime.utcnow().isoformat(),
+                "timestamp_vehicle_ist": props.get("visfahrplanlagezst"),
+                "timestamp_soll_arrival": props.get("ankunftziel"),
+                "timestamp_soll_departure": props.get("abfahrtstart"),
+                "service_day": props.get("betriebstag"),
+
+                # Delay
+                "delay": props.get("delay"),
+
+                # Position
+                "lat": coords[1],
+                "lon": coords[0]
+            }
+
+            print("Parsed event:", event)
+            send_to_eventhub(event)
+
+    except Exception as e:
+        print("Error processing message:", repr(e))
+
+
+def on_error(ws, error):
+    print("WebSocket error:", repr(error))
+
+
+def on_close(ws, close_status_code, close_msg):
+    print("WebSocket closed:", close_status_code, close_msg)
+
+
+def on_open(ws):
+    print("WebSocket connection established at", datetime.utcnow().isoformat())
+
+
+# Main loop
+while True:
+    try:
+        print("Connecting to WebSocket:", WS_URL)
+        ws = websocket.WebSocketApp(
+            WS_URL,
+            on_open=on_open,
+            on_message=on_message,
+            on_error=on_error,
+            on_close=on_close
+        )
+
+        ws.run_forever()
+
+        print("Connection lost. Retrying in 5 seconds...")
+        time.sleep(5)
+
+    except Exception as e:
+        print("Fatal error:", repr(e))
+        time.sleep(5)
