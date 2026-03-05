@@ -1,10 +1,11 @@
+<img width="1451" height="854" alt="Dashboard" src="https://github.com/user-attachments/assets/66529aed-4345-4e3a-9083-85535a0170c3" />
 # Real-Time Commuter Dashboard (GFTS-RT + Microsoft Fabric)
 
 This project demonstrates a complete real-time data pipeline built on Microsoft Fabric using GTFS-Realtime data from Stadtwerke Münster. It ingests live vehicle events via WebSocket, processes them through Azure Event Hub and Fabric Eventstream, stores them in a KQL database (Bronze/Silver/Gold), and visualizes real-time and historical transit performance using a Real-time-Dashboard.
 
 The goal is to build a Real-Time Commuter Resilience Engine that helps understand delays, reliability, and operational patterns in public transport.
 
-Originally, it was planned to user Power BI for the dasbhoard, and add a deployment pipeline. As my Power BI licence expired, I created a Fabric Real-Time-Dashboard instead and did not include a deployment pipeline.
+Originally, the dashboard was planned to be implemented in Power BI and deployed via a deployment pipeline. As my Power BI license expired, I created a Fabric Real-Time Dashboard instead and did not include a deployment pipeline.
 
 # Data Source: Stadtwerke Münster GTFS-RT
 
@@ -46,7 +47,7 @@ To solve this, a Python WebSocket bridge was built. It:
 - Converts everything into clean JSON
 - Sends each event to Azure Event Hub
 
-This ensures a stable, schema-consistent stream for Fabric.
+Azure Event Hub acts as the ingestion buffer and provides a supported connector for Fabric Eventstream. This ensures a stable, schema-consistent stream for Fabric.
 
 # Architecture Overview
 
