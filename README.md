@@ -1,16 +1,16 @@
-# Real-Time Commuter Dashboard (GFTS-RT + Microsoft Fabric)
+# Realtime Commuter Dashboard (GFTS-RT + Microsoft Fabric)
 
 <img width="1451" height="854" alt="Dashboard" src="https://github.com/user-attachments/assets/66529aed-4345-4e3a-9083-85535a0170c3" />
 
-This project demonstrates a complete real-time data pipeline built on Microsoft Fabric using GTFS-Realtime data from Stadtwerke Münster. It ingests live vehicle events via WebSocket, processes them through Azure Event Hub and Fabric Eventstream, stores them in a KQL database (Bronze/Silver/Gold), and visualizes real-time and historical transit performance using a Real-time-Dashboard.
+This project demonstrates a complete realtime data pipeline built on Microsoft Fabric using GTFS-Realtime data from Stadtwerke Münster. It ingests live vehicle events via WebSocket, processes them through Azure Event Hub and Fabric Eventstream, stores them in a KQL database (Bronze/Silver/Gold), and visualizes realtime and historical transit performance using a realtime Dashboard.
 
-The goal is to build a Real-Time Commuter Resilience Engine that helps understand delays, reliability, and operational patterns in public transport.
+The goal is to build a realtime Commuter Resilience Engine that helps understand delays, reliability, and operational patterns in public transport.
 
 Originally, the dashboard was planned to be implemented in Power BI and deployed via a deployment pipeline. As my Power BI license expired, I created a Fabric Real-Time Dashboard instead and did not include a deployment pipeline.
 
 # Data Source: Stadtwerke Münster GTFS-RT
 
-The project uses the official real-time feed provided by Stadtwerke Münster.
+The project uses the official realtime feed provided by Stadtwerke Münster.
 
 The feed provides:
 - Live vehicle positions
@@ -66,7 +66,7 @@ Azure Event Hub acts as the ingestion buffer and provides a supported connector 
 3. Microsoft Fabric Eventstream
 - Reads from Event Hub
 - Writes raw events into the KQL Bronze table
-- Provides real-time preview and monitoring
+- Provides realtime preview and monitoring
 
 4. Bronze Layer (Raw)
 - Stores unmodified JSON events
@@ -90,9 +90,9 @@ Aggregates hourly KPIs:
 
 Grouped by service_day, hour, line_id, line_text.
 
-7. Real-time Dashboard
+7. realtime Dashboard
 
-The dashboard visualizes both real-time and past 24 hours transit performance:
+The dashboard visualizes both realtime and past 24 hours transit performance:
 - Live map of all active vehicles
 - On-time performance (last 15 minutes)
 - Average and maximum delay
@@ -102,4 +102,4 @@ The dashboard visualizes both real-time and past 24 hours transit performance:
 - Active vehicle count
 - Last event timestamp
 
-A real-time dashboard was used built on the KQL database, so updates appear instantly as new events arrive.
+A Fabric Real-Time Dashboard was used built on the KQL database, so updates appear instantly as new events arrive.
