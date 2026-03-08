@@ -90,7 +90,7 @@ Aggregates hourly KPIs:
 
 Grouped by service_day, hour, line_id, line_text.
 
-7. realtime Dashboard
+7. Realtime Dashboard
 
 The dashboard visualizes both realtime and past 24 hours transit performance:
 - Live map of all active vehicles
